@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::Add;
 
 pub fn run() {
     let mut f = File::open("src/day_one/a.input").expect("File not found");
@@ -11,15 +12,8 @@ pub fn run() {
     let val = contents
       .split("\n")
       .filter(|row| !row.is_empty())
-      .fold(0, |freq, row| {
-        let val: i32 = row[1..].parse().expect("Value not number?");
-
-        match &row[0..1] {
-          "+" => freq + val,
-          "-" => freq - val,
-          op => panic!("Invalid operation {}", op),
-        }
-      });
+      .map(|row| row.parse::<i32>().expect("Value not number?"))
+      .fold(0, Add::add);
 
     println!("Value: {}", val);
 }

@@ -12,14 +12,10 @@ pub fn run() {
     let val = contents
       .split("\n")
       .filter(|row| !row.is_empty())
-      .cycle()    
-      .try_fold((0, HashSet::new()), |(freq, mut visited_values), row| {
-        let val: i32 = row[1..].parse().expect("Value not number?");
-        let new_freq = match &row[0..1] {
-          "+" => freq + val,
-          "-" => freq - val,
-          op => panic!("Invalid operation {}", op),
-        };
+      .cycle()
+      .map(|row| row.parse::<i32>().expect("Value not number?"))
+      .try_fold((0, HashSet::new()), |(freq, mut visited_values), diff| {
+        let new_freq = freq + diff;
 
         if visited_values.contains(&new_freq) {
           return Err(new_freq)
