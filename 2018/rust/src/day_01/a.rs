@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 pub fn run() {
-    let mut f = File::open("src/day_one/a.input").expect("File not found");
+    let mut f = File::open("src/day_01/a.input").expect("File not found");
 
     let mut contents = String::new();
     f.read_to_string(&mut contents)

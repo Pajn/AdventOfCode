@@ -1,5 +1,5 @@
-pub mod day_one;
+pub mod day_01;
 
 fn main() {
-    day_one::b::run();
+    day_01::b::run();
 }
