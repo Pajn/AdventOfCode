@@ -22,8 +22,8 @@ pub fn run() {
       .filter(|row| !row.is_empty())
       .collect();
 
-    for row1 in &rows {
-      for row2 in &rows {
+    for (i, row1) in rows.iter().enumerate() {
+      for row2 in &rows[i..] {
         if check_row(row1, row2) == 1 {
           println!("Row1: {}, Row2: {}", row1, row2);
 
