@@ -2,8 +2,6 @@ use regex::Regex;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::rc::Rc;
-use std::sync::Mutex;
 
 fn parse(input: &str) -> (u32, u32) {
   let pattern = Regex::new(r"^(\d+) players; last marble is worth (\d+) points$").unwrap();
@@ -18,13 +16,12 @@ fn parse(input: &str) -> (u32, u32) {
 
 #[derive(Debug)]
 struct Round {
-  current_index: usize,
   score: u64,
   current_marble: u64,
 }
 
 fn play_rounds() -> impl Iterator<Item = Round> {
-  let mut marbles = Rc::new(vec![]);
+  let mut marbles = Vec::with_capacity(71_000_000);
   let mut current_index = 0;
 
   (0..).map(move |marble| match marble % 23 {
@@ -34,32 +31,28 @@ fn play_rounds() -> impl Iterator<Item = Round> {
       } else {
         current_index - 7
       };
-      let removed_marble = Rc::get_mut(&mut marbles).unwrap().remove(current_index);
+      let removed_marble = marbles.remove(current_index);
 
       Round {
-        current_index: current_index,
         score: removed_marble + marble,
         current_marble: marble,
       }
     }
     _ => {
       if marbles.len() > 1 {
-        current_index = (current_index + 2) % (marbles.len() + 0);
+        current_index = (current_index + 2) % marbles.len();
         if current_index == 0 {
           current_index = marbles.len();
-          Rc::get_mut(&mut marbles).unwrap().push(marble);
+          marbles.push(marble);
         } else {
-          Rc::get_mut(&mut marbles)
-            .unwrap()
-            .insert(current_index, marble);
+          marbles.insert(current_index, marble);
         }
       } else {
         current_index = marbles.len();
-        Rc::get_mut(&mut marbles).unwrap().push(marble);
+        marbles.push(marble);
       }
 
       Round {
-        current_index: current_index,
         score: 0,
         current_marble: marble,
       }
@@ -75,31 +68,30 @@ pub fn player_tracker(num_players: u32) -> impl Iterator<Item = u32> {
 struct GameRound {
   round: Round,
   player: u32,
+  score: u64,
 }
 
-fn play(
-  num_players: u32,
-) -> (
-  Rc<Mutex<BTreeMap<u32, u64>>>,
-  impl Iterator<Item = GameRound>,
-) {
-  let player_scores = Rc::new(Mutex::new(BTreeMap::new()));
+fn play(num_players: u32) -> impl Iterator<Item = GameRound> {
+  let mut player_scores = BTreeMap::new();
 
-  (
-    player_scores.clone(),
-    play_rounds()
-      .zip(player_tracker(num_players))
-      .map(move |(round, player)| {
-        player_scores
-          .lock()
-          .expect("Can not borrow as mutable")
-          .entry(player)
-          .and_modify(|e| *e += round.score)
-          .or_insert(0);
+  play_rounds()
+    .zip(player_tracker(num_players))
+    .map(move |(round, player)| {
+      let score = *player_scores
+        .entry(player)
+        .and_modify(|e| *e += round.score)
+        .or_insert(0);
 
-        GameRound { round, player }
-      }),
-  )
+      if round.current_marble % 100_000 == 0 {
+        println!("round: {} {}", round.current_marble, score)
+      }
+
+      GameRound {
+        round,
+        player,
+        score,
+      }
+    })
 }
 
 pub fn run() {
@@ -112,29 +104,19 @@ pub fn run() {
   let (num_players, highest_score) = parse(&contents);
 
   let highest_score = highest_score as u64 * 100;
-  let (player_scores, game) = play(num_players);
-  game
-    .take_while(|round| round.round.current_marble <= highest_score)
-    .last();
+  println!("highest_score: {}", highest_score);
+  let winning_round = play(num_players)
+    .find(|round| round.round.current_marble == highest_score)
+    .unwrap();
 
   println!(
     "{} players; last marble is worth {} points\n",
     num_players, highest_score
   );
 
-  let (winning_player, winning_score) = {
-    player_scores
-      .try_lock()
-      .expect("Can not lock scores at result")
-      .clone()
-      .into_iter()
-      .max_by_key(|(_, score)| *score)
-      .unwrap()
-  };
-
   println!(
     "Winning player: {}, with score: {}",
-    winning_player, winning_score
+    winning_round.player, winning_round.score
   );
 }
 

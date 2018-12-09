@@ -72,7 +72,7 @@ fn play_rounds() -> impl Iterator<Item = Round> {
     }
     _ => {
       if marbles.len() > 1 {
-        current_index = (current_index + 2) % (marbles.len() + 0);
+        current_index = (current_index + 2) % marbles.len();
         if current_index == 0 {
           current_index = marbles.len();
           Rc::get_mut(&mut marbles).unwrap().push(marble);
