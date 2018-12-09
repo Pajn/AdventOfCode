@@ -150,9 +150,10 @@ pub fn run() {
   let game = play(num_players).take_while(|round| round.round.current_marble <= highest_score);
 
   // let game = game.collect::<Vec<_>>();
+  // print(game.iter());
+
   let last_round = game.last().unwrap();
 
-  // print(game.iter());
   println!(
     "{} players; last marble is worth {} points\n",
     num_players, highest_score
